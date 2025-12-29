@@ -1,0 +1,12 @@
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "$#" -lt 1 ]; then
+      echo "Usage: git-difftool-setup <tool>" >&2
+      exit 1
+    fi
+
+    tool="$1"
+git config --global diff.tool "$tool"
+git config --global difftool.prompt false
+

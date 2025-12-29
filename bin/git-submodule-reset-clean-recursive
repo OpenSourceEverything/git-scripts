@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+git submodule foreach --recursive "git reset --hard && git clean -fdx"

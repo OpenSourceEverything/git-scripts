@@ -1,0 +1,16 @@
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "$#" -lt 1 ]; then
+      echo "Usage: git-merge-base-fork-point <base>" >&2
+      exit 1
+    fi
+
+    base="$1"
+if [[ "$base" == */* ]]; then
+  remote_ref="$base"
+else
+  remote_ref="origin/$base"
+fi
+git merge-base --fork-point "$remote_ref" HEAD
+

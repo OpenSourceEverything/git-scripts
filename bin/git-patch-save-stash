@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+stash_ref="${1:-stash@{0}}"
+out="${2:-patch.patch}"
+git stash show -p "$stash_ref" > "$out"

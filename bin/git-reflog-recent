@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+count="${1:-10}"
+git reflog -n "$count"
