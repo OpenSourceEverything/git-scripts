@@ -1,16 +1,48 @@
-    #!/usr/bin/env bash
-    set -euo pipefail
+#!/usr/bin/env bash
+set -euo pipefail
 
-    if [ "$#" -lt 1 ]; then
-      echo "Usage: git-merge-base-fork-point <base>" >&2
-      exit 1
-    fi
+# Find the fork point between HEAD and a base branch.
+# Manual equivalent (defaulting to origin):
+#   git merge-base --fork-point origin/<base> HEAD
+usage() {
+  cat <<'EOF'
+Usage: git-merge-base-fork-point <base>
 
-    base="$1"
+Show the fork-point commit between HEAD and a base branch.
+
+Options:
+  -h, --help, -help  Show help
+
+Notes:
+  - If <base> does not include a remote prefix, origin/ is assumed.
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require exactly one base argument.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <base>" >&2
+  usage >&2
+  exit 1
+fi
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Add origin/ if the base does not include a remote prefix.
+base="$1"
 if [[ "$base" == */* ]]; then
   remote_ref="$base"
 else
   remote_ref="origin/$base"
 fi
-git merge-base --fork-point "$remote_ref" HEAD
 
+# Execute the git command.
+git merge-base --fork-point "$remote_ref" HEAD

@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: git-difftool-file <path> [path...]" >&2
+# Launch the configured difftool for specific paths.
+# Manual equivalent:
+#   git difftool <path> [path...]
+usage() {
+  cat <<'EOF'
+Usage: git-difftool-file <path> [path...]
+
+Open the difftool for one or more paths.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require at least one path.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <path>" >&2
+  usage >&2
   exit 1
 fi
 
+# Execute the git command.
 git difftool "$@"

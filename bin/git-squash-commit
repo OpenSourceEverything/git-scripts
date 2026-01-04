@@ -1,0 +1,236 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Squash branch changes into a single commit without rebasing.
+# Manual equivalent (typical):
+#   git reset --soft origin/develop
+#   git add -A
+#   git commit -m "<message>"
+usage() {
+  cat <<'EOF'
+Usage: git-squash-commit [options]
+
+Squash all changes on the current branch into a single commit on top of
+the base ref. This rewrites local history.
+
+Options:
+  --base <name>        Base branch name (default: develop)
+  --remote <name>      Remote name for base (default: origin)
+  --local-base         Use <base> as-is without remote prefix
+  --no-fetch           Skip git fetch
+  --stage-all          Stage all tracked and untracked changes before commit
+  -m, --message <msg>  Commit message for the squashed commit
+  --reuse-message      Reuse the current HEAD commit message
+  --push               Push after squash (modifies remote)
+  --push-with-lease    Push with --force-with-lease (modifies remote)
+  -y, --yes, --confirm Assume yes for prompts
+  -h, --help, -help    Show help
+
+Notes:
+  - This rewrites local history by moving HEAD to the base ref.
+  - Pushing after a squash rewrite is opt-in and may require force.
+EOF
+}
+
+confirm() {
+  local prompt="$1"
+  local reply=""
+  read -r -p "$prompt" reply
+  case "$reply" in
+    [yY]|[yY][eE][sS])
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+base="develop"
+remote="origin"
+use_remote_prefix=1
+do_fetch=1
+do_push=0
+push_with_lease=0
+message=""
+reuse_message=0
+assume_yes=0
+stage_all=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help|-help)
+      usage
+      exit 0
+      ;;
+    --base)
+      shift
+      if [[ $# -lt 1 ]]; then
+        echo "Missing value for --base" >&2
+        usage >&2
+        exit 1
+      fi
+      base="$1"
+      ;;
+    --remote)
+      shift
+      if [[ $# -lt 1 ]]; then
+        echo "Missing value for --remote" >&2
+        usage >&2
+        exit 1
+      fi
+      remote="$1"
+      ;;
+    --local-base)
+      use_remote_prefix=0
+      ;;
+    --no-fetch)
+      do_fetch=0
+      ;;
+    --stage-all)
+      stage_all=1
+      ;;
+    -m|--message)
+      shift
+      if [[ $# -lt 1 ]]; then
+        echo "Missing value for --message" >&2
+        usage >&2
+        exit 1
+      fi
+      message="$1"
+      ;;
+    --reuse-message)
+      reuse_message=1
+      ;;
+    --push)
+      do_push=1
+      ;;
+    --push-with-lease)
+      do_push=1
+      push_with_lease=1
+      ;;
+    -y|--yes|--confirm)
+      assume_yes=1
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+if [[ $# -gt 0 ]]; then
+  echo "Unexpected arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+if [[ "$reuse_message" -eq 1 && -n "$message" ]]; then
+  echo "Choose only one of --message or --reuse-message" >&2
+  usage >&2
+  exit 1
+fi
+
+# Resolve the base ref, defaulting to origin/<base> when applicable.
+if [[ "$use_remote_prefix" -eq 1 && "$base" != */* ]]; then
+  base_ref="$remote/$base"
+else
+  base_ref="$base"
+fi
+
+# Fetch the remote by default to ensure the base ref is current.
+if [[ "$do_fetch" -eq 1 ]]; then
+  git fetch "$remote"
+fi
+
+# Verify the base ref exists before proceeding.
+if ! git rev-parse --verify "$base_ref" >/dev/null 2>&1; then
+  echo "Base ref not found: $base_ref" >&2
+  exit 1
+fi
+
+# Capture the current HEAD message for optional reuse.
+head_message="$(git log -1 --pretty=%B HEAD 2>/dev/null || true)"
+current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+
+# Confirm local history rewrite before the soft reset.
+if [[ "$assume_yes" -ne 1 ]]; then
+  echo "About to rewrite local history on branch: $current_branch" >&2
+  echo "This will reset HEAD to $base_ref and create a single commit." >&2
+  if ! confirm "Continue? [y/N] "; then
+    exit 1
+  fi
+fi
+
+# Move HEAD to the base while keeping all changes staged.
+git reset --soft "$base_ref"
+
+# Stage all working tree changes if requested or confirmed.
+if [[ -n "$(git diff --name-only)" || -n "$(git ls-files --others --exclude-standard)" ]]; then
+  if [[ "$stage_all" -eq 1 || "$assume_yes" -eq 1 ]]; then
+    git add -A
+  else
+    echo "Unstaged or untracked changes detected." >&2
+    if confirm "Stage all changes before commit? [y/N] "; then
+      git add -A
+    else
+      echo "Aborting. Stage changes and re-run, or use --stage-all." >&2
+      exit 1
+    fi
+  fi
+fi
+
+# Decide on the commit message (explicit, reused, or prompted).
+commit_message="$message"
+if [[ -z "$commit_message" ]]; then
+  if [[ "$reuse_message" -eq 1 ]]; then
+    commit_message="$head_message"
+  elif [[ -n "$head_message" ]]; then
+    echo "Current commit message:" >&2
+    printf '%s\n' "$head_message" >&2
+    if [[ "$assume_yes" -eq 1 ]]; then
+      commit_message="$head_message"
+    elif confirm "Reuse this commit message? [y/N] "; then
+      commit_message="$head_message"
+    fi
+  fi
+fi
+
+if [[ -z "$commit_message" ]]; then
+  if [[ "$assume_yes" -eq 1 ]]; then
+    echo "Commit message is required. Provide --message or --reuse-message." >&2
+    exit 1
+  fi
+  read -r -p "Enter commit message: " commit_message
+fi
+
+if [[ -z "$commit_message" ]]; then
+  echo "Commit message is required." >&2
+  exit 1
+fi
+
+# Commit using stdin to preserve multi-line messages.
+printf '%s\n' "$commit_message" | git commit -F -
+
+# Push only when explicitly enabled, and warn about history rewrite.
+if [[ "$do_push" -eq 1 ]]; then
+  echo "Remotes:" >&2
+  git remote -v >&2
+  echo "Warning: pushing after a squash rewrite can overwrite remote history." >&2
+  if [[ "$assume_yes" -ne 1 ]]; then
+    if ! confirm "Push to remote now? [y/N] "; then
+      exit 0
+    fi
+  fi
+  if [[ "$push_with_lease" -eq 1 ]]; then
+    git push --force-with-lease
+  else
+    git push
+  fi
+fi

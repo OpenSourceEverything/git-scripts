@@ -1,4 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Show the default branch name for origin (from origin/HEAD).
+# Manual equivalent:
+#   git symbolic-ref --short refs/remotes/origin/HEAD
+usage() {
+  cat <<'EOF'
+Usage: git-origin-default-branch
+
+Print the default branch for the origin remote.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# This command takes no arguments, so error on extras.
+if [[ $# -gt 0 ]]; then
+  echo "Unexpected arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Execute the git command.
 git symbolic-ref --short refs/remotes/origin/HEAD

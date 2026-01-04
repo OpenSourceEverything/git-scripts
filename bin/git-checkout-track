@@ -1,16 +1,46 @@
-    #!/usr/bin/env bash
-    set -euo pipefail
+#!/usr/bin/env bash
+set -euo pipefail
 
-    if [ "$#" -lt 1 ]; then
-      echo "Usage: git-checkout-track <branch|remote/branch>" >&2
-      exit 1
-    fi
+# Check out a remote branch locally and set it to track the remote.
+# Manual equivalent (when no remote is provided):
+#   git checkout --track origin/<branch>
+usage() {
+  cat <<'EOF'
+Usage: git-checkout-track <branch|remote/branch>
 
-    branch="$1"
+Create a local tracking branch from a remote branch.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require exactly one branch argument.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <branch|remote/branch>" >&2
+  usage >&2
+  exit 1
+fi
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# If the argument already contains a slash, treat it as remote/branch.
+# Otherwise, default to the origin remote.
+branch="$1"
 if [[ "$branch" == */* ]]; then
   remote_ref="$branch"
 else
   remote_ref="origin/$branch"
 fi
-git checkout --track "$remote_ref"
 
+# Execute the git command.
+git checkout --track "$remote_ref"

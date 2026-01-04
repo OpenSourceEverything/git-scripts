@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: git-merge-no-commit <branch>" >&2
+# Merge a branch without auto-committing.
+# Manual equivalent:
+#   git merge --no-commit --no-ff <branch> [extra git merge args...]
+usage() {
+  cat <<'EOF'
+Usage: git-merge-no-commit <branch> [git-merge-args...]
+
+Merge a branch but stop before creating the merge commit.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require at least the branch name.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <branch>" >&2
+  usage >&2
   exit 1
 fi
 
+# Execute the git command, passing through any extra args.
 git merge --no-commit --no-ff "$@"

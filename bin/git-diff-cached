@@ -1,4 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Show staged changes compared to HEAD.
+# Manual equivalent:
+#   git diff --cached
+usage() {
+  cat <<'EOF'
+Usage: git-diff-cached
+
+Show the staged diff against the last commit.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# This command takes no arguments, so error on extras.
+if [[ $# -gt 0 ]]; then
+  echo "Unexpected arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Execute the git command.
 git diff --cached

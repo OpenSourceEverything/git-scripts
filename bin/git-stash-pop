@@ -1,8 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -gt 0 ]; then
-  git stash pop "$@"
-else
-  git stash pop
+# Pop a stash entry (apply and drop).
+# Manual equivalent:
+#   git stash pop [stash-ref]
+usage() {
+  cat <<'EOF'
+Usage: git-stash-pop [stash-ref] [git-stash-args...]
+
+Pop a stash entry (default: stash@{0}).
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
 fi
+
+# Execute the git command, passing through any args.
+git stash pop "$@"

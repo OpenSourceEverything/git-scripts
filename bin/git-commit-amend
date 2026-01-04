@@ -1,4 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Amend the most recent commit.
+# Manual equivalent:
+#   git commit --amend [git-commit-args...]
+usage() {
+  cat <<'EOF'
+Usage: git-commit-amend [git-commit-args...]
+
+Amend the latest commit with the current index and optional args.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Execute the git command, passing through any args.
 git commit --amend "$@"

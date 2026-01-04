@@ -1,8 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -gt 0 ]; then
-  git stash apply "$@"
-else
-  git stash apply
+# Apply a stash entry to the working tree.
+# Manual equivalent:
+#   git stash apply [stash-ref]
+usage() {
+  cat <<'EOF'
+Usage: git-stash-apply [stash-ref] [git-stash-args...]
+
+Apply a stash entry (default: stash@{0}).
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
 fi
+
+# Execute the git command, passing through any args.
+git stash apply "$@"

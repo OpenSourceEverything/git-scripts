@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: git-clone-submodules <repo-url> [directory]" >&2
+# Clone a repo and initialize submodules in one step.
+# Manual equivalent:
+#   git clone --recurse-submodules <repo-url> [directory] [extra git clone args...]
+usage() {
+  cat <<'EOF'
+Usage: git-clone-submodules <repo-url> [directory] [git-clone-args...]
+
+Clone a repository and recursively initialize submodules.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require at least the repository URL.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <repo-url>" >&2
+  usage >&2
   exit 1
 fi
 
+# Execute the git command, passing through any extra args.
 git clone --recurse-submodules "$@"

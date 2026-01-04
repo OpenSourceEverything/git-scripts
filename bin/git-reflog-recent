@@ -1,5 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Show recent reflog entries.
+# Manual equivalent:
+#   git reflog -n <count>
+usage() {
+  cat <<'EOF'
+Usage: git-reflog-recent [count]
+
+Show recent reflog entries (default: 10).
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Allow zero or one argument only.
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Use the provided count or default to 10.
 count="${1:-10}"
+
+# Execute the git command.
 git reflog -n "$count"

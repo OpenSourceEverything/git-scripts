@@ -1,5 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Apply a patch file to the working tree.
+# Manual equivalent:
+#   git apply <file>
+usage() {
+  cat <<'EOF'
+Usage: git-patch-apply [file]
+
+Apply a patch file (default: patch.patch).
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Allow zero or one argument only.
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Use the provided patch file or default.
 file="${1:-patch.patch}"
+
+# Execute the git command.
 git apply "$file"

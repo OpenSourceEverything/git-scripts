@@ -1,4 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Remove all untracked files, directories, and ignored files.
+# Manual equivalent:
+#   git clean -fdx
+usage() {
+  cat <<'EOF'
+Usage: git-clean-fdx
+
+Delete untracked files, directories, and ignored files.
+This is destructive and cannot be undone.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# This command takes no arguments, so error on extras.
+if [[ $# -gt 0 ]]; then
+  echo "Unexpected arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Execute the git command.
 git clean -fdx

@@ -1,6 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Save a stash entry to a patch file.
+# Manual equivalent:
+#   git stash show -p <stash-ref> > <file>
+usage() {
+  cat <<'EOF'
+Usage: git-patch-save-stash [stash-ref] [file]
+
+Write a stash diff to a patch file (default: stash@{0} -> patch.patch).
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Allow zero, one, or two arguments only.
+if [[ $# -gt 2 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Use provided values or defaults.
 stash_ref="${1:-stash@{0}}"
 out="${2:-patch.patch}"
+
+# Execute the git command.
 git stash show -p "$stash_ref" > "$out"

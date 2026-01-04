@@ -1,9 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: git-checkout-branch <branch>" >&2
+# Switch to an existing local branch.
+# Manual equivalent:
+#   git checkout <branch>
+usage() {
+  cat <<'EOF'
+Usage: git-checkout-branch <branch>
+
+Switch to an existing local branch.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require exactly one branch name.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <branch>" >&2
+  usage >&2
+  exit 1
+fi
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
   exit 1
 fi
 
+# Execute the git command.
 git checkout "$1"

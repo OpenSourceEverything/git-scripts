@@ -1,12 +1,43 @@
-    #!/usr/bin/env bash
-    set -euo pipefail
+#!/usr/bin/env bash
+set -euo pipefail
 
-    if [ "$#" -lt 1 ]; then
-      echo "Usage: git-difftool-setup <tool>" >&2
-      exit 1
-    fi
+# Configure the global difftool and disable prompt.
+# Manual equivalent:
+#   git config --global diff.tool <tool>
+#   git config --global difftool.prompt false
+usage() {
+  cat <<'EOF'
+Usage: git-difftool-setup <tool>
 
-    tool="$1"
+Set the global git difftool and disable its prompt.
+
+Options:
+  -h, --help, -help  Show help
+
+Notes:
+  - This modifies your global git configuration.
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require the tool name.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <tool>" >&2
+  usage >&2
+  exit 1
+fi
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
+  exit 1
+fi
+
+# Execute the git config commands.
+tool="$1"
 git config --global diff.tool "$tool"
 git config --global difftool.prompt false
-

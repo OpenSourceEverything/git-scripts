@@ -1,9 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: git-checkout-new-branch <branch>" >&2
+# Create a new branch and check it out.
+# Manual equivalent:
+#   git checkout -b <branch>
+usage() {
+  cat <<'EOF'
+Usage: git-checkout-new-branch <branch>
+
+Create a new branch and switch to it.
+
+Options:
+  -h, --help, -help  Show help
+EOF
+}
+
+# Show help and exit early when requested.
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "-help" ]]; then
+  usage
+  exit 0
+fi
+
+# Require exactly one branch name.
+if [[ $# -lt 1 ]]; then
+  echo "Missing required argument: <branch>" >&2
+  usage >&2
+  exit 1
+fi
+if [[ $# -gt 1 ]]; then
+  echo "Too many arguments: $*" >&2
+  usage >&2
   exit 1
 fi
 
+# Execute the git command.
 git checkout -b "$1"
